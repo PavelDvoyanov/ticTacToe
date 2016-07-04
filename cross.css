@@ -1,0 +1,59 @@
+@charset "utf-8";
+/* CSS Document */
+*{
+	padding: 0px;
+	margin-right: 0px;
+	margin: 0 auto;
+	box-sizing: border-box;
+	font-family: helvetica;
+}
+table{
+	margin: 2em auto;
+	border-collapse: collapse;
+	width: 300px;
+	height: 300px;
+	
+}
+table td{
+	border: 1px solid black;
+	width: 100px;
+	height: 100px;
+}
+
+h1{
+	text-align: center;
+	margin: 1em;
+}
+.cross{
+background: url(cross.png) center center no-repeat;
+}
+.zero{
+background: url(zero.png) center center no-repeat;
+}
+.icon{
+display: inline-block;
+vertical-align: bottom;
+margin-left: 1em;
+width: 35px;
+height: 35px;
+background-size: 100% 100%;
+}
+.winner{
+	background-color: #CCCCCC;
+}
+.restart{
+	display: block;
+	width: 150px;
+	margin: 1em auto;
+	background: #CCCCCC;
+	color: black;
+	padding: 1em;
+	font-weight: bold;
+	text-transform: uppercase;
+	border: 1px #000000 solid;
+	border-radius: 4px;
+	box-shadow: 3px 3px 5px #333333;
+}
+.restart:active {
+	box-shadow: none;
+}
