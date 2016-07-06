@@ -1,152 +1,181 @@
-// window.onload = startClock;
-// function startClock (){
-// }
-// function drawClock (){
+const
+MODE_TEXT = { // Сообщение для пользователя для каждого режима игры
+  'playing': 'Ходит',
+  'winner': 'Выиграл',
+  'draw': 'Ничья'
+};
+const 
+LINES = [ // заранее предопределенные варианты выигрыша
+  [[0, 0], [0, 1], [0, 2]],
+  [[1, 0], [1, 1], [1, 2]],
+  [[2, 0], [2, 1], [2, 2]],
+  [[0, 0], [1, 0], [2, 0]],
+  [[0, 1], [1, 1], [2, 1]],
+  [[0, 2], [1, 2], [2, 2]],
+  [[0, 0], [1, 1], [2, 2]],
+  [[2, 0], [1, 1], [0, 2]]
+];
 
-// }
-// function drawMacks (){
-// 	var R = 45;
-// 	var container = document.querySelectorAll('.watch .marks')[0];
-// 	for (var angle = 60, i = 1; i <= 12; i++, angle -=30){
-// 		var radAngle = Math.PI * angle / 180;
-// 		var x = 50 + R * Math.cos(radAngle);
-// 		var y = 50 - R * Math.sin(radAngle);
-// 		var li = document.createElement('li');
-// 		li.textContent = i;
-// 		li.style.left = x + '%';
-// 		li.style.top = y + '%';
-// 		container.appendChild(li);
-// 	}
-// }
-// function drawTicks(container){
-//   for (var i = 0; i < 60; ++i){
-//     var angle = i * 6;
-//     var li = document.createElement('li');
-//     li.style.transform = 'rotate(' + angle + 'deg)';
-//     if(i % 5 == 0)
-//       li.className = 'thick';
-//     container.appendChild(li);
-//   }
-// }
-// function smoothRotation(date){
-//   var seconds = date.getSeconds() + date.getMilliseconds() / 1000;
-//   var minutes = date.getMinutes() + seconds / 60;
-//   var hours = date.getHours() % 12 + minutes / 60;
-//   return {
-//     hours: ratioToDegrees(hours / 12),
-//     minutes: ratioToDegrees(minutes / 60),
-//     seconds: ratioToDegrees(seconds / 60)
-//   }
-// }
-// function ratioToDegrees(ratio){
-//   return (ratio * 360 - 90);
-// }
-function startClock(){
-  var watches = document.querySelectorAll('.watch');
-  for (var i = 0; i < watches.length; ++i){
-    var watch = watches[i];
-    drawMarks(watch.querySelector('.marks'));
-    drawTicks(watch.querySelector('.ticks'));
-  }
+var model = {
+  root: null, // корневой элемент, контейнер для игрового поля и заголовка 
+  mode: 'playing', // текущий режим приложения (playing|winner|draw)
+  active: 'cross', // текущий игрок
+  field: // состояние игрового поля
+  [['empty', 'empty', 'empty'], ['empty', 'empty', 'empty'], ['empty', 'empty', 'empty']]
+};
 
-  requestAnimationFrame(function drawer(){ //именованное функциональное выражение - для рекурсии
-    updateHands();
-    requestAnimationFrame(drawer); //рекурсия
-  });
+// $(document).ready(...) - очень близкий аналог window.onload
+$(document).ready(function(){
+  initGame('#game');
+});
+
+function initGame(root){
+  model.root = $(root);
+  reset(); // перед началом работы сбросить все на исходную
+  model.root.find('.field').click(onCellClicked); // зарегистрировать обрабочик клика на игровое поле
 }
 /**
- * Создает циферблат
+ * Обработчик события клика по игровому полю
+ */
+function onCellClicked(event){
+  // поведение обработчика отличается во время игры и между раундами
+  if(model.mode == 'playing'){
+    var coords = getCellCoords(event); // куда конкретно кликнули?
+    if(coords && model.field[coords[0]][coords[1]] == 'empty'){ //пуста ли ячейка?
+      model.field[coords[0]][coords[1]] = model.active; // ставим туда фигуру текущего игрока
+      var gameResult = checkGameResult(); // завершилась ли игра?
+      switch (gameResult.mode) {
+      case 'playing': // игра продолжается
+        model.active = (model.active == 'cross' ? 'zero' : 'cross'); // ходит следующий игрок
+        updateField();
+        updateActivePlayer();
+        break;
+      case 'winner':
+        model.mode = 'winner';
+        updateField(gameResult.line);
+        updateMessage();
+        break;
+      case 'draw':
+        model.mode = 'draw'; 
+        model.active = ''; // ничья - победившего нет
+        updateField();
+        updateMessage();
+        updateActivePlayer();
+      }
+    }
+    // если ячейка уже занята, то вообще ничего не делаем
+  }else{
+    // в данный момент игра завершена (или ничья, или есть победитель)
+    // следующий клик начинает новую игру
+    reset();
+  }
+}
+
+/**
+ * Возвращает координаты кликнутой ячейки
  * 
- * @param container
- *          родительский элемент для создаваемых цифр
+ * @param event
+ *          событие клика
+ * @return массив из двух значений [индексРяда, индексСтолбца] или undefined, если клик был не по ячейке
  */
-function drawMarks(container){
-  var R = 41;
-  for (var i = 1, angle = 60; i <= 12; ++i, angle -= 30){
-    var angleRad = angle * Math.PI / 180;
-    var x = 50 + R * Math.cos(angleRad);
-    var y = 50 - R * Math.sin(angleRad);
-    var li = document.createElement('li');
-    li.textContent = i;
-    li.style.left = x.toFixed(2) + "%"; // округляем до 2 знаков в дробной части
-    li.style.top = y.toFixed(2) + "%";
-    container.appendChild(li);
-  }
+function getCellCoords(event){
+  var cell = $(event.target).closest('td'); // ближайший родитель
+  if(cell)
+    // извлекаем координаты из атрибутов и сразу же пакуем оба значения в массив
+    return [+cell.attr('data-row'), +cell.attr('data-column')];
 }
+
 /**
- * Создает поминутные и пятиминутные отметки на циферблате
+ * Проверяет исход игры основываясь на текущем состоянии поля в модели
  * 
- * @param container
- *          родительский элемент для создаваемых засечек на циферблате
+ * @return объект с полем mode, и (для выйгрыша) с полем line
+ *      {
+ *        mode : 'draw'|'winner'|'playing',
+ *        line: [[индексРяда, индексСтолбца] x3]
+ *      }
  */
-function drawTicks(container){
-  for (var i = 0; i < 60; ++i){ //всего 60 делений
-    var angle = i * 6; // по 6 градусов на каждое деление
-    var li = document.createElement('li');
-    li.style.transform = 'rotate(' + angle + 'deg)';
-    if(i % 5 == 0) // каждое пятое деление - толстое
-      li.className = 'thick';
-    container.appendChild(li);
+function checkGameResult(){
+  // 1. проверяем, есть ли выйгрыш
+  for (var i = 0; i < LINES.length; ++i){
+    var line = LINES[i]; // каждый вариант по отдельности
+    var matches = true; // совпадает ли состояние линии с активным игроком
+    // проверять на выйгрыш можно только активного игрока, т.к. только он может выиграть на этом ходу
+    for (var j = 0; j < 3; ++j){
+      var rowIndex = line[j][0];
+      var columnIndex = line[j][1];
+      matches = matches && model.field[rowIndex][columnIndex] == model.active;
+    }
+    if(matches)
+      return {
+        mode: 'winner',
+        line: line
+      };
   }
-}
-/**
- * Обновляет положение стрелок всех часов в документе
- */
-function updateHands(){
-  var computeRotation = jerkyRotation;
-  // использование матрицы позволяет добавить плавный управляемый переход между состояниями с помощью CSS
-  var applyRotation = matrixTransform;
-  var rotation = computeRotation(new Date());
-  var watches = document.querySelectorAll('.watch');
-  for (var i = 0; i < watches.length; ++i){
-    applyRotation(watches[i].querySelector('.hourHand'), rotation.hours);
-    applyRotation(watches[i].querySelector('.minuteHand'), rotation.minutes);
-    applyRotation(watches[i].querySelector('.secondHand'), rotation.seconds);
-  }
-}
-/**
- * Вспомогательная функция для вычисления желаемого угла поворота изначально горизонтальной стрелки исходя из доли
- * пройденного ею пути по окружности
- * 
- * @param ratio
- *          доля пройденного стрелкой пути по отношению ко всей окружности (значение из интервала [0..1))
- * @return угол поворота в системе отсчета документа (значение из интервала [0..360))
- */
-function ratioToDegrees(ratio){
-  return (ratio * 360 - 90) % 360;
-}
+  // если есть хотя бы одна выйгрышная линия, то сюда программа не дойдет
+  
+  // 2. играем дальше, если еще остается куда ходить (есть хотя бы одна пустая ячейка)
+  for (i = 0; i < 3; ++i)
+    for (j = 0; j < 3; ++j)
+      if(model.field[i][j] == 'empty')
+        return {
+          mode: 'playing'
+        };
 
-//---- способы задания поворота
-function rotateTransform(hand, degrees){ // просто поворот, имеет проблемы с анимацией
-  hand.style.transform = 'rotate(' + degrees.toFixed(2) + 'deg)';
-}
-
-function matrixTransform(hand, degrees){ //полная матрица трансформации, анимируется без ошибок
-  var a = degrees * Math.PI / 180;
-  var cos = Math.cos(a);
-  var sin = Math.sin(a);
-  var matrixArgs = [cos, sin, -sin, cos, 0, 0];
-  hand.style.transform = 'matrix(' + matrixArgs.join(',') + ')';
-}
-
-//---- способы вычисления поворота
-function smoothRotation(date){ // стрелки плавно передвигаются между засечками
-  var seconds = date.getSeconds() + date.getMilliseconds() / 1000;
-  var minutes = date.getMinutes() + seconds / 60;
-  var hours = date.getHours() % 12 + minutes / 60;
+  // 3. нет победителя и некуда ходить - ничья
   return {
-    hours: ratioToDegrees(hours / 12),
-    minutes: ratioToDegrees(minutes / 60),
-    seconds: ratioToDegrees(seconds / 60)
+    mode: 'draw'
+  };
+}
+/**
+ * Сбрасывает состояние модели и поля на начальное
+ */
+function reset(){
+  // сбрасываем все в модели кроме корневого элемента
+  model.mode = 'playing';
+  model.active = model.active || 'cross'; // первым в новой партии будет ходить выигравший
+  for (var i = 0; i < 3; ++i)
+    for (var j = 0; j < 3; ++j)
+      model.field[i][j] = 'empty';
+  // далее обновляем весь HTML
+  updateField();
+  updateMessage();
+  updateActivePlayer();
+}
+
+/**
+ * Приводит состояние игрового поля в соответствии с моделью. Расставляет все фигуры по ячейкам и при необходимости
+ * выделяет выйгрышную линию
+ * 
+ * @param line
+ *          необязательный параметр - выйгрышная линия
+ */
+function updateField(line){
+  var fieldJQueryDescriptor = model.root.find('.field');
+  var fieldHTMLElement = fieldJQueryDescriptor[0]; // так можно развернуть jQuery-дескриптор в обыкновенный HTML элемент
+  for (var i = 0; i < 3; ++i)
+    for (var j = 0; j < 3; ++j){
+      var cell = $(fieldHTMLElement.rows[i].cells[j]);
+      var state = model.field[i][j];
+      cell.removeClass('zero cross empty winner').addClass(state);
+    }
+  if(line){ // если линия задана
+    for (i = 0; i < 3; ++i){
+      var rowIndex = line[i][0];
+      var columnIndex = line[i][1];
+      $(fieldHTMLElement.rows[rowIndex].cells[columnIndex]).addClass('winner');
+    }
   }
 }
 
-// function jerkyRotation(date){ // стрелки занимают дискретные положения, точно по засечкам
-//   return {
-//     hours: ratioToDegrees(date.getHours() % 12 / 12),
-//     minutes: ratioToDegrees(date.getMinutes() / 60),
-//     seconds: ratioToDegrees(date.getSeconds() / 60)
-//   }
-// }
-
-window.onload = startClock;
+/**
+ * Обновляет сообщение в зависимости от режима игры
+ */
+function updateMessage(){
+  model.root.find('.message').text(MODE_TEXT[model.mode]);
+}
+/**
+ * Обновляет отображаемого активного игрока
+ */
+function updateActivePlayer(){
+  model.root.find('.icon').removeClass('zero cross').addClass(model.active);
+}
