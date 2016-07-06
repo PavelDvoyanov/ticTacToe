@@ -1,59 +1,49 @@
 @charset "utf-8";
-/* CSS Document */
-*{
-	padding: 0px;
-	margin-right: 0px;
-	margin: 0 auto;
-	box-sizing: border-box;
-	font-family: helvetica;
-}
-table{
-	margin: 2em auto;
-	border-collapse: collapse;
-	width: 300px;
-	height: 300px;
-	
-}
-table td{
-	border: 1px solid black;
-	width: 100px;
-	height: 100px;
+
+.tic-tac-toe {
+  padding: 1em;
 }
 
-h1{
-	text-align: center;
-	margin: 1em;
+.field {
+  margin: 1em auto;
+  border-collapse: collapse;
+   /* border-collapse: collapse изменяет модель построения ячеек таблицы,
+      для точного задания размеров необходимо учесть еще границу*/
+  width: 302px;
+  height: 302px;
 }
-.cross{
-background: url(cross.png) center center no-repeat;
+
+.field td {
+  border: 2px solid black; /* для таблиц с тонкой манипуляцией размерами ячеек при возможности следует брать четную ширину границ */
+  width: 100px;
+  height: 100px;
+  box-sizing: border-box; /* изменять стандартную модель построения следует как можно ближе к интересующему элементу*/
 }
-.zero{
-background: url(zero.png) center center no-repeat;
+
+.info {
+  font-family: helvetica; /* опять же, шрифт меняем как можно ближе к интересующему элементу */
+  text-align: center;
 }
-.icon{
-display: inline-block;
-vertical-align: bottom;
-margin-left: 1em;
-width: 35px;
-height: 35px;
-background-size: 100% 100%;
+
+/* почти уверен, что можно было бы использовать data-url для иконок,
+   тогда отпадет необходимость в двух файлах картинок */
+.cross {
+  background: url(cross.png) center center no-repeat;
 }
-.winner{
-	background-color: #CCCCCC;
+
+.zero {
+  background: url(zero.png) center center no-repeat;
 }
-.restart{
-	display: block;
-	width: 150px;
-	margin: 1em auto;
-	background: #CCCCCC;
-	color: black;
-	padding: 1em;
-	font-weight: bold;
-	text-transform: uppercase;
-	border: 1px #000000 solid;
-	border-radius: 4px;
-	box-shadow: 3px 3px 5px #333333;
+
+.icon {
+  display: inline-block;
+  vertical-align: bottom;
+  width: 1em;
+  height: 1em; /* лучше размер inline элемента задавать относительно текущего размера шрифта, а не абсолютно */
+  margin-left: 0.5em; /* то же самое с отступами (хотя тут возможны варианты) */
+  background-size: 100% 100%;
 }
-.restart:active {
-	box-shadow: none;
+
+.winner {
+  background-color: #CCCCCC;
 }
