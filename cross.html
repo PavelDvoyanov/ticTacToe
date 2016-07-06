@@ -1,42 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<link rel="stylesheet" href="cross.css">
-	<meta charset="UTF-8">
-	<title></title>
-	<script   src="https://code.jquery.com/jquery-1.12.4.min.js"   integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="   crossorigin="anonymous"></script>
+  <meta charset="UTF-8">
+  <!-- указание кодировки ОБЯЗАТЕЛЬНО должно следовать первым в head -->
+  <title>Крестики - нолики</title><!-- не забываем про заголовок -->
+  <link rel="stylesheet" href="cross.css"><!-- снчала CSS, потом скрипты -->
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
   <script src="cross.js"></script>
 </head>
 <body>
-<div id="game">
-  <h1><span class="test">ХОДИТ</span><span class="zero icon"></span></h1>
-  <table>
-   <tr>
-     <td class="empty" data-row="0" data-column="0">
-     </td>
-     <td class="zero winner" data-row="0" data-column="1">
-     </td>
-     <td class="cross" data-row="0" data-column="2">
-     </td>
-   </tr>
-   <tr>
-     <td data-row="1" data-column="0">
-     </td>
-     <td data-row="1" data-column="1">
-     </td>
-     <td data-row="1" data-column="2">
-     </td>
-   </tr>
-   <tr>
-     <td data-row="2" data-column="0">
-     </td>
-     <td data-row="2" data-column="1">
-     </td>
-     <td data-row="2" data-column="2">
-     </td>
-   </tr>
-  </table>
-  <button class="restart">Новая игра</button>
+  <!-- по возможности начальный шаблон делаем точно как при исходном состоянии -->
+  <div id="game" class="tic-tac-toe">
+    <h1 class="info"><!-- не жадничаем повесить дополнительный класс -->
+      <span class="message">Ходит</span><span class="cross icon"></span>
+    </h1>
+    <table class="field">
+      <tr>
+        <td data-row="0" data-column="0"></td>
+        <td data-row="0" data-column="1"></td>
+        <td data-row="0" data-column="2"></td>
+      </tr>
+      <tr>
+        <td data-row="1" data-column="0"></td>
+        <td data-row="1" data-column="1"></td>
+        <td data-row="1" data-column="2"></td>
+      </tr>
+      <tr>
+        <td data-row="2" data-column="0"></td>
+        <td data-row="2" data-column="1"></td>
+        <td data-row="2" data-column="2"></td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>
